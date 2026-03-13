@@ -402,46 +402,18 @@ def proxy(path):
                 "link", rel=lambda v: v and "stylesheet" in v
             )
             
-            if css_links:
-                # CSS URL抽出
-                css_urls = []
-                css_link_map = {}
-                for link in css_links:
-                    href = link.get("href")
-                    if href:
-                        css_url = abs_url(target_url, href)
-                        css_urls.append(css_url)
-                        css_link_map[css_url] = link
-                
-                # 非同期で複数CSS取得（並行処理）
-                if css_urls:
-                    try:
-                        css_results = asyncio.run(
-                            process_css_links_async(css_urls, headers)
-                        )
-                        
-                        # 取得結果をHTMLに反映
-                        for css_result in css_results:
-                            link = css_link_map.get(css_result["url"])
-                            if not link:
-                                continue
-                            
-                            if css_result["content"] and css_result["should_inline"]:
-                                # インライン化
-                                style = soup.new_tag("style")
-                                style.string = css_result["content"]
-                                link.replace_with(style)
-                            else:
-                                # プロキシ経由
-                                link["href"] = make_proxy_url(css_result["url"], target_url)
-                    except:
-                        # フォールバック：全てプロキシ経由
-                        for link in css_links:
-                            href = link.get("href")
-                            if href:
-                                css_url = abs_url(target_url, href)
-                                link["href"] = make_proxy_url(css_url, target_url)
+            # ここをまるごと削除 or コメントアウト
+# if css_links:
+#     css_urls = [...]
+#     css_results = asyncio.run(process_css_links_async(...))
+#     ...
 
+# 代わりにこれだけ（全部プロキシ化）
+            for link in soup.find_all("link", rel=lambda v: v and "stylesheet" in v):
+                href = link.get("href")
+                if href:
+                    css_url = abs_url(target_url, href)
+                    link["href"] = make_proxy_url(css_url, target_url)
             # jQuery競合対策スクリプトを挿入
             protect_script = soup.new_tag("script")
             protect_script.string = """
